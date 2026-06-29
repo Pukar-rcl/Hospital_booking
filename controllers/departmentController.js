@@ -4,7 +4,7 @@ const responser = require('../utils/responseFormat');
 const logger = require('../config/logger');
 
 const addDepartment = async(req, res)=>{
-    const {name} = req.body;
+    const {name, description} = req.body;
 
     if(!name || name.length < 3){
         logger.info({
@@ -30,7 +30,8 @@ const addDepartment = async(req, res)=>{
 
    const department = new Department({
     name : name,
-    id : Depid
+    id : Depid,
+    description : description
    })
    try{
     await department.save();
@@ -59,7 +60,7 @@ const addDepartment = async(req, res)=>{
 
 const updateDep = async(req, res)=>{
     const urn = req.headers['urn'];
-    const {name, newname} = req.body;
+    const {name, newname, description} = req.body;
    const existingDEpt = await Department.findOne({name});
 
    if(!existingDEpt){
@@ -78,10 +79,23 @@ const updateDep = async(req, res)=>{
         message : "Department name already exists and cannot be changed"
     }));
     }
+
+    const update ={ 
+    name : name
+   }
+   if(description !== undefined){
+    update.description = description
+   }
+
     const updatedDept = await Department.findOneAndUpdate(
     {name},
-    {$set: {name: newname}},
-    {new: true});
+    {
+        $set: {
+            update
+        }
+    },
+    {new: true}
+);
 
     logger.info({
         status : "department updated",
