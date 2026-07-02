@@ -28,6 +28,10 @@ const doctor = mongoose.Schema({
             required : true
         }
     },
+    averagetime:{
+        type : Number,
+        required : true
+    },
     createdBy: {
         type: Number,
         ref: 'Admin',

@@ -7,10 +7,10 @@ const Department = require('../models/department');
 
 
 const addDoctor = async(req,res)=>{
-    const {name, department, dutytime} = req.body;
+    const {name, department, dutytime, averagetime} = req.body;
     const urn = req.headers['urn'];
 
-    if(!name || ! department || !dutytime.start || !dutytime.end){
+    if(!name || ! department || !dutytime.start || !dutytime.end || !averagetime){
         logger.info({
             status : "empty fields in addDoctor",
             urn : urn
@@ -19,13 +19,13 @@ const addDoctor = async(req,res)=>{
         return res.status(200).json(responseFormatter({
             code: 401,
             message : "empty fields are not allowed",
-            data : {name, department, dutytime}
+            data : {name, department, dutytime, averagetime}
         }))
     }
     const admuserID = req.user.id;
     const admusermail = req.user.email;
 
-    const dep = Department.findOne({department});
+    const dep = await Department.findOne({department});
     if(!dep){
         logger.info({
             status : "Deparment not found",
@@ -35,7 +35,7 @@ const addDoctor = async(req,res)=>{
         return res.status(200).json(responseFormatter({
             code: 401,
             message : "Department does not exist",
-            data : {name, department, dutytime}
+            data : {name, department, dutytime, averagetime}
         }))
     }
     const existingDoctor = await doctor.findOne({name, department});
@@ -64,13 +64,25 @@ const addDoctor = async(req,res)=>{
 
         })
     }
+    const[shour, sminute] = dutytime.start.split(':').map(Number);
+    const [hour, minute] = dutytime.end.split(':').map(Number);
+
+    const start = (shour * 60) + (sminute);
+    const end = (hour *60) + (minute);
+
+    totaltime = end - start;
+
+    if(averagetime > totaltime){
+        logger.info({
+            status : "average time input exceeds total time"
+        })
+        return res.status(200).json(responseFormatter({
+            code :401,
+            message : "average time input exceeds total working time"
+        }))
+    }
 
     const docID = crypto.randomInt(10001, 100000);
-    if (!departments.includes(req.body.department)) {
-    return res.status(400).json(responseFormatter({
-        message: 'Invalid department'
-    }));
-    }
     try{
         const adddoctor = new doctor({
         name : name,
@@ -78,7 +90,8 @@ const addDoctor = async(req,res)=>{
         department : department,
         departmentId : dep.departmentId,
         dutytime : dutytime,
-        createdBy : admuserID
+        createdBy : admuserID,
+        averagetime : averagetime
         })
         await adddoctor.save()
         logger.info({
@@ -109,13 +122,14 @@ const addDoctor = async(req,res)=>{
 const updateDoctor = async (req, res)=>{
     const urn = req.headers['urn'];
     const {id} = req.params;
-    const {name, department, dutytime} = req.body;
+    const {name, department, dutytime, averagetime} = req.body;
 
     const updateData = {};
 
     if (name) updateData.name = name;
     if (department) updateData.department = department;
     if (dutytime) updateData.dutytime = dutytime;
+    if(averagetime) updateData.averagetime = averagetime;
 
     try{
         const existingDoctor = await doctor.findOne({id});
@@ -128,6 +142,22 @@ const updateDoctor = async (req, res)=>{
             code: 401,
             message : "Doctor is not registered"
         }));
+    }   
+    const[shour, sminute] = dutytime.start.split(':').map(Number);
+    const [hour, minute] = dutytime.end.split(':').map(Number);
+    const start = (shour * 60) + (sminute);
+    const end = (hour *60) + (minute);
+
+    totaltime = end - start;
+
+    if(averagetime > totaltime){
+        logger.info({
+            status : "average time input exceeds total time"
+        })
+        return res.status(200).json(responseFormatter({
+            code :401,
+            message : "average time input exceeds total working time"
+        }))
     }
 
         const updatedDoctor = await doctor.findOneAndUpdate(

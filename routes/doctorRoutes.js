@@ -2,11 +2,12 @@ const express = require('express');
 const router = express.Router()
 const authMiddleware = require('../middelware/auth');
 const {addDoctor,updateDoctor,deleteDoctor,readAllDoctors,readOneDoctor} = require('../controllers/doctorController')
+const adminAuth = require('../middelware/adminAuthorization');
 
-router.post('/add/doctor', authMiddleware, addDoctor);
-router.patch('/update/doctor/:id', authMiddleware, updateDoctor);
-router.delete('/delete/doctor/:id',authMiddleware, deleteDoctor);
-router.get('/getall/doctor', authMiddleware,readAllDoctors);
-router.get('/getone/doctor/:id', authMiddleware,readOneDoctor);
+router.get('/getall/doctor', adminAuth,authMiddleware,readAllDoctors);
+router.post('/add/doctor',adminAuth, authMiddleware, addDoctor);
+router.patch('/update/doctor/:id', adminAuth,authMiddleware, updateDoctor);
+router.delete('/delete/doctor/:id',adminAuth,authMiddleware, deleteDoctor);
+router.get('/getone/doctor/:id', adminAuth,authMiddleware,readOneDoctor);
 
 module.exports = router;

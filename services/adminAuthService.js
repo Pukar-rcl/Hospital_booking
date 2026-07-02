@@ -108,7 +108,7 @@ const adminAuthLogin= async(req,res)=>{
         })
         return res.status(200).json(formatResponce({
             message : "Admin could not be found",
-            data : {email},
+            data : null,
             code : 401
         }))
     }
@@ -126,24 +126,23 @@ const adminAuthLogin= async(req,res)=>{
             data : password
         }))
     }
+    console.log("in service:", existingAdmin);
 //token
     const token = jwt.sign({
         id: existingAdmin.id,
-        name : existingAdmin.name,
-        email : existingAdmin.email,
-        role : existingAdmin.role
+        role : existingAdmin.role 
     },
     process.env.JWT_SECRET,
     {expiresIn: '7d'});
 
     logger.info({
-        action: "user created successfully",
+        action: "Login for admin",
         urn : urn
     })
 
     return res.status(200).json(formatResponce({
         code : 201,
-        message : "User created successsfully",
+        message : "Login successful",
         data : token
     }))
 }

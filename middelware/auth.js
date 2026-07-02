@@ -3,6 +3,7 @@ const formatResponse = require('../utils/responseFormat');
 const logger = require('../config/logger');
 
 const authMiddleware = (req,res,next)=>{
+console.log("in auth", req.user);
     if(!req.headers['urn']){
         logger.info({
             action: "urn not provided"
@@ -40,7 +41,7 @@ const authMiddleware = (req,res,next)=>{
         }
         const token = header.split(' ')[1];
 
-
+console.log(token);
         if(!token){
             logger.info({
                 action: "token error"
@@ -54,7 +55,7 @@ const authMiddleware = (req,res,next)=>{
         let decoded;
         try{
             decoded = jwt.verify(token, process.env.JWT_SECRET);
-
+            console.log("deccc",decoded)
             logger.info({
                 action: "JWT verified",
             })
@@ -71,9 +72,10 @@ const authMiddleware = (req,res,next)=>{
         }
         req.user = {
             id : decoded.id,
-            email : decoded.email,
             role : decoded.role
         }
+
+        // console.log(req.user)
     }catch(error){
         logger.info({
                 action: "error at token authentication"

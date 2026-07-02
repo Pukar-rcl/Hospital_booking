@@ -8,6 +8,8 @@ const cors = require('cors')
 const doctorroutes = require('./routes/doctorRoutes')
 const adminRoutes = require('./routes/adminRoutes')
 const departmentRoutes  = require('./routes/departmentRoutes');
+const authMiddleware = require('./middelware/auth');
+const bookingRoutes = require('./routes/bookingRoutes');
 
 app.use(cors({
   origin: ['http://192.168.1.72:5500', 'http://127.0.0.1:5500', 
@@ -24,9 +26,10 @@ ConnectMongo()
     .catch(err => console.error(" DB connection failed:", err));
 
 app.use('/api', authRoutes);
-app.use('/api/admin', doctorroutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/admin', departmentRoutes);
+app.use('/api/admin',adminRoutes);
+app.use('/api/admin', authMiddleware, doctorroutes);
+app.use('/api/admin', authMiddleware,departmentRoutes);
+app.use('/api/booking', authMiddleware, bookingRoutes);
 
 const PORT = process.env.PORT;
 

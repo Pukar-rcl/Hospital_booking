@@ -60,18 +60,11 @@ const addDepartment = async(req, res)=>{
 
 const updateDep = async(req, res)=>{
     const urn = req.headers['urn'];
-    const {name, newname, description} = req.body;
-   const existingDEpt = await Department.findOne({name});
-
-   if(!existingDEpt){
-    return res.status(200).json(responser({
-        code : 401,
-        message : "Department doesn't exists",
-    }))
-   }
+    const Depid = req.params;
+    const {name, description} = req.body;
 
    try{
-    const duplicate = await Department.findOne({name: newname});
+    const duplicate = await Department.findOne({name: name});
 
     if (duplicate) {
     return res.status(200).json(responser({
@@ -88,7 +81,7 @@ const updateDep = async(req, res)=>{
    }
 
     const updatedDept = await Department.findOneAndUpdate(
-    {name},
+    {Depid},
     {
         $set: {
             update

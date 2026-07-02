@@ -14,6 +14,11 @@ const admin = mongoose.Schema({
         required: true,
         unique : true
     },
+    role :{
+        type : String,
+        required : true,
+        enums : ['admin']
+    },
     id:{
         type : Number,
         required: true
