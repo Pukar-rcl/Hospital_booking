@@ -44,7 +44,6 @@ const addDepartment = async(req, res)=>{
         message : "department added",
         data : Depid
     }))
-    
    }catch(error){
     logger.info({
         status : "error occurred",
@@ -62,17 +61,14 @@ const updateDep = async(req, res)=>{
     const urn = req.headers['urn'];
     const Depid = req.params;
     const {name, description} = req.body;
-
    try{
     const duplicate = await Department.findOne({name: name});
-
     if (duplicate) {
     return res.status(200).json(responser({
         code : 401,
         message : "Department name already exists and cannot be changed"
     }));
     }
-
     const update ={ 
     name : name
    }
@@ -94,7 +90,6 @@ const updateDep = async(req, res)=>{
         status : "department updated",
         urn : urn
     })
-
     return res.status(200).json(responser({
         code: 201,
         message : "user updated",
@@ -128,7 +123,6 @@ const getDepsbyID = async(req, res)=>{
         message : "Department doesn't exists",
     }))
    }
-
    return res.status(200).json(responser({
     code : 200,
     message : "Department details :",
@@ -143,7 +137,6 @@ const getAllDeps = async(req, res)=>{
     logger.info({
         status : "showing all departments:"
     })
-
     return res.status(200).json(responser({
         code : 200,
         message: "All departments",
@@ -178,12 +171,10 @@ const deletedep = async(req, res)=>{
     }
 
     const delDep = await Department.findOneAndDelete({id});
-
     logger.info({
         status : "department deleted",
         urn : urn
     })
-
     return res.status(200).json(responser({
         code  :200,
         message : "Department deleted successfully"

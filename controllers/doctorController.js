@@ -10,7 +10,7 @@ const addDoctor = async(req,res)=>{
     const {name, department, dutytime, averagetime} = req.body;
     const urn = req.headers['urn'];
 
-    if(!name || ! department || !dutytime.start || !dutytime.end || !averagetime){
+    if(!name || ! department || !dutytime.start || !dutytime.end || averagetime === null){
         logger.info({
             status : "empty fields in addDoctor",
             urn : urn
@@ -25,7 +25,7 @@ const addDoctor = async(req,res)=>{
     const admuserID = req.user.id;
     const admusermail = req.user.email;
 
-    const dep = await Department.findOne({department});
+    const dep = await Department.findOne({name: department});
     if(!dep){
         logger.info({
             status : "Deparment not found",
@@ -88,7 +88,7 @@ const addDoctor = async(req,res)=>{
         name : name,
         id : docID,
         department : department,
-        departmentId : dep.departmentId,
+        departmentId : dep.id,
         dutytime : dutytime,
         createdBy : admuserID,
         averagetime : averagetime
@@ -102,7 +102,7 @@ const addDoctor = async(req,res)=>{
         return res.status(200).json(responseFormatter({
             code : 201,
             message : "Doctor added",
-            data : {name, department, dutytime, admuserID, docID}
+            data : {name, department, dutytime, admuserID, docID, averagetime}
         }));
     }catch(error){
         logger.info({

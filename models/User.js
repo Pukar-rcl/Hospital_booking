@@ -5,6 +5,10 @@ const createClient = mongoose.Schema({
         type: String,
         required: true,
     },
+    id:{
+        type : Number,
+        required : true
+    },
     password:{
         type :String,
         required: true

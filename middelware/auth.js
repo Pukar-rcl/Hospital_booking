@@ -3,7 +3,6 @@ const formatResponse = require('../utils/responseFormat');
 const logger = require('../config/logger');
 
 const authMiddleware = (req,res,next)=>{
-console.log("in auth", req.user);
     if(!req.headers['urn']){
         logger.info({
             action: "urn not provided"

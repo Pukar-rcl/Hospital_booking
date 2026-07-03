@@ -7,6 +7,7 @@ const redis = require('redis');
 const redisClient = redis.createClient();
 redisClient.connect().catch(err => console.error("Redis Error", err));
 const logger = require('../config/logger');
+const crypto = require('crypto');
 
 const register = async(req,res)=>{
     try{
@@ -50,13 +51,14 @@ const register = async(req,res)=>{
                 message: "error hashing password",
         }))
     }
-
+        const id = crypto(1000, 100000);
         const user = new User({
             name : name,
             password : hashedPass,
             email:email,
             condition : condition,
-            phone : phone
+            phone : phone,
+            id : id
     })
 
         await user.save();

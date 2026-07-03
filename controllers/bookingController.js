@@ -5,6 +5,7 @@ const Booking = require('../models/booking');
 const responseFormat = require('../utils/responseFormat');
 const logger = require('../config/logger'); 
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
 const timeToMinutes = (timeStr) => {
     if (!timeStr) return 0;
@@ -37,7 +38,7 @@ const getDoctorDept = async (req, res) => {
     const { departmentName } = req.body;
 
     try {
-        const dept = await Department.findOne({ name : departmentName });
+        const dept = await Doctor.find({ department : departmentName });
 
         if (!dept) {
             logger.info({
@@ -105,7 +106,7 @@ const getAvailableSlots = async (req, res) => {
         const dutyEnd = doctor.dutytime.end;
         const averageTime = doctor.averagetime || 30; 
 
-        const { start, end } = getDateRange(bookingDate);
+        const {start, end} = getDateRange(bookingDate);
         const existingBookings = await Booking.find({
             Did: doctorID,
             bookingStart: {
@@ -125,7 +126,6 @@ const getAvailableSlots = async (req, res) => {
                 const bookingEnd = new Date(booking.bookingEnd);
                 const bookingStartMinutes = bookingStart.getHours() * 60 + bookingStart.getMinutes();
                 const bookingEndMinutes = bookingEnd.getHours() * 60 + bookingEnd.getMinutes();
-                
                 return (currentTime >= bookingStartMinutes && currentTime < bookingEndMinutes) ||
                        (currentTime + averageTime > bookingStartMinutes && 
                         currentTime + averageTime <= bookingEndMinutes);
@@ -209,7 +209,14 @@ const bookAppointment = async (req, res) => {
             }));
         }
         const bookingEndTime = addMinutesToTime(bookingStartTime, averageTime);
-        const { start, end } = getDateRange(bookingDate);
+
+        console.log({
+    bookingDate,
+    bookingStartTime,
+    averageTime,
+    bookingEndTime
+});
+        const {start, end} = getDateRange(bookingDate);
         const existingBooking = await Booking.findOne({
             Did: doctorID,
             bookingStart: {
@@ -260,6 +267,34 @@ const bookAppointment = async (req, res) => {
             urn: urn,
             bookingId: bookingId
         });
+
+        const transport = nodemailer.createTransport({
+            service: 'gmail',
+        auth: {
+            user: process.env.MAIL,        
+            pass: process.env.MAIL_PASS   
+            }
+        })
+        const mailOpt = {
+        from: process.env.MAIL,
+        to: user.email,
+        subject: 'Hospital appointment booking',
+        text: `
+        ID : ${bookingId},
+        Doctor name: ${doctor.name},
+               Date: ${bookingDate},
+                Time : ${bookingStartTime},
+                till :${bookingEndTime}`
+        };
+
+        transport.sendMail(mailOpt, (error, info) =>{
+              if (error) {
+    console.log('Error occurred:', error);
+  } else {
+    console.log('Email sent successfully:', info.response);
+  }
+        })
+      
         return res.status(200).json(responseFormat({
             code: 200,
             message: "Appointment booked successfully",
@@ -295,7 +330,7 @@ const getDoctorBookings = async (req, res) => {
                 $gte: start,
                 $lte: end
             }
-        }).populate('Pid', 'name email phone'); // Assuming User model has these fields
+        }).populate('Pid', 'name email phone'); 
         return res.status(200).json(responseFormat({
             code: 200,
             message: "Doctor's bookings",
