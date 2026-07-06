@@ -1,6 +1,5 @@
 const User = require('../models/User');
 const Doctor = require('../models/doctor');
-const Department = require('../models/department');
 const Booking = require('../models/booking');
 const responseFormat = require('../utils/responseFormat');
 const logger = require('../config/logger'); 
@@ -36,10 +35,8 @@ const generateBookingId = () => {
 const getDoctorDept = async (req, res) => {
     const urn = req.headers['urn'];
     const { departmentName } = req.body;
-
     try {
         const dept = await Doctor.find({ department : departmentName });
-
         if (!dept) {
             logger.info({
                 status: "error: incorrect department",
@@ -211,11 +208,11 @@ const bookAppointment = async (req, res) => {
         const bookingEndTime = addMinutesToTime(bookingStartTime, averageTime);
 
         console.log({
-    bookingDate,
-    bookingStartTime,
-    averageTime,
-    bookingEndTime
-});
+        bookingDate,
+        bookingStartTime,
+        averageTime,
+        bookingEndTime
+        });
         const {start, end} = getDateRange(bookingDate);
         const existingBooking = await Booking.findOne({
             Did: doctorID,
@@ -497,7 +494,40 @@ const checkSlotAvailability = async (req, res) => {
     }
 };
 
+
+const bookingDetails = async (req, res)=>{
+    const urn  = req.headers['urn'];
+    const bookings = await Booking.find();
+
+    const result = [];
+
+    for (const booking of bookings) {
+     const patient = await User.findOne({ id: booking.Pid });
+     const doctor = await Doctor.findOne({ id: booking.Did });
+
+    result.push({
+        Patient: patient.name,
+        Doctor: doctor.name,
+        Department: doctor.department,
+        BookingDate: booking.bookingDate,
+        BookingStart: booking.bookingStart,
+        BookingEnd: booking.bookingEnd
+    });
+    }
+    logger.info({
+        status : "Showing all bookings",
+        urn : urn
+    })
+
+    return res.status(200).json(responseFormat({
+        code  : 200,
+        message  :"all bookings : ",
+        data : result
+    }))
+}
+
 module.exports = {
+    bookingDetails,
     getDoctorDept,
     getAvailableSlots,
     bookAppointment,

@@ -8,6 +8,7 @@ const redisClient = redis.createClient();
 redisClient.connect().catch(err => console.error("Redis Error", err));
 const logger = require('../config/logger');
 const crypto = require('crypto');
+const { response } = require('express');
 
 const register = async(req,res)=>{
     try{
@@ -51,7 +52,7 @@ const register = async(req,res)=>{
                 message: "error hashing password",
         }))
     }
-        const id = crypto(1000, 100000);
+        const id = crypto.randomInt(1000, 100000);
         const user = new User({
             name : name,
             password : hashedPass,
@@ -142,4 +143,16 @@ const Login = async(req, res)=>{
     }
 }
 
-module.exports = {register, Login};
+const allUser = async(req,res) =>{
+    const user = await User.findOne();
+
+    res.status(200).json(
+        formatter({
+            code : 200,
+            message  :"all users",
+            data : user
+        })
+    )
+}
+
+module.exports = {register, Login, allUser};

@@ -126,7 +126,6 @@ const adminAuthLogin= async(req,res)=>{
             data : password
         }))
     }
-    console.log("in service:", existingAdmin);
 //token
     const token = jwt.sign({
         id: existingAdmin.id,

@@ -7,7 +7,7 @@ const {deletedep,updateDep,addDepartment,getDepsbyID,getAllDeps} = require('../c
 router.delete('/dep/del/:id',authMiddleware ,adminMiddleware,deletedep);
 router.patch('/dep/update/:id',authMiddleware ,adminMiddleware, updateDep);
 router.post('/dep/add',authMiddleware , adminMiddleware,addDepartment);
-router.get('/dep/get/:id',authMiddleware ,adminMiddleware, getDepsbyID);
-router.get('/dep/get',authMiddleware ,adminMiddleware, getAllDeps);
+router.get('/dep/get/:id',authMiddleware , getDepsbyID);
+router.get('/dep/get',authMiddleware, getAllDeps);
 
 module.exports = router;

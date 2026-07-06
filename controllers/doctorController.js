@@ -262,10 +262,50 @@ const readOneDoctor = async(req, res)=>{
     }))
 }
 
+const doctorByDepartmentID = async(req,res)=>{
+    const urn = req.headers['urn'];
+    const { departmentID } = req.body;
+    try {
+        const doctors = await doctor.find({
+        departmentId: departmentID,
+        isActive: true
+        });
+        if (doctors.length === 0) {
+            logger.info({
+                status: "error: incorrect department",
+                urn: urn
+            });
+            return res.status(200).json(responseFormatter({
+                code: 401,
+                message: "INCORRECT DEPARTMENT",
+                data: null
+            }));
+        }
+        return res.status(200).json(responseFormatter({
+            code : 200,
+            message : "doctors in department:",
+            data : doctors
+        }))
+    } catch (error) {
+        logger.error({
+            status: "error",
+            message: error.message,
+            urn: urn
+        });
+        return res.status(500).json(responseFormatter({
+            code: 500,
+            message: "Internal server error",
+            data: null
+        }));
+    }
+};
+
+
 module.exports = {
     addDoctor,
     updateDoctor,
     deleteDoctor,
     readAllDoctors,
-    readOneDoctor
+    readOneDoctor,
+    doctorByDepartmentID
 }
