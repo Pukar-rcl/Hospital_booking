@@ -1,6 +1,5 @@
 const bcrypt = require('bcrypt');
 const jwttoken = require('jsonwebtoken');
-const {validateLogin,validateRegistration} = require('../utils/validator');
 const User = require('../models/User');
 const formatter = require('../utils/responseFormat');
 const redis = require('redis');
@@ -8,7 +7,6 @@ const redisClient = redis.createClient();
 redisClient.connect().catch(err => console.error("Redis Error", err));
 const logger = require('../config/logger');
 const crypto = require('crypto');
-const { response } = require('express');
 
 const register = async(req,res)=>{
     try{
@@ -26,7 +24,6 @@ const register = async(req,res)=>{
 
         const {name, email, password, phone} = req.body;
         const urn = req.headers['urn'];
-
         let{condition} = req.body;
 
         if(!condition){
@@ -96,7 +93,6 @@ const Login = async(req, res)=>{
             email: req.body.email,
         })
         const{email, password} = req.body;
-        const validatelogin = validateLogin(email, password);
 
     const user = await User.findOne({email});
 
@@ -249,6 +245,8 @@ const passwordReset = async (req, res)=> {
         client.password = updatedPassword;
 
         await client.save();
+
+        await redis.del(`reset:${hashedToken}`)
 
         logger.info({
             status : "resetting password"
