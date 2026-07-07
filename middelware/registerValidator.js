@@ -12,7 +12,7 @@ const registervalidate = async(req,res,next) =>{
         )
      }
 
-     if(email.length<6 || !email || !email.includes('@')){
+     if(!email || !email.includes('@')){
         return res.status(200).json(
             responseFormat({
                 code : 401,

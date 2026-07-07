@@ -26,8 +26,6 @@ const register = async(req,res)=>{
 
         const {name, email, password, phone} = req.body;
         const urn = req.headers['urn'];
-        const validatereg = validateRegistration(name, email, password, phone);
-
 
         let{condition} = req.body;
 
@@ -154,5 +152,125 @@ const allUser = async(req,res) =>{
         })
     )
 }
+const passwordResetToken = async(req, res)=>{
+    const {email} = req.body;
+    try{
+    const findmail = await User.findOne({
+        email
+    })
 
-module.exports = {register, Login, allUser};
+    if(!findmail){
+        return res.status(200).json(formatter({
+            code : 401,
+            message : "User not found",
+            data : null
+        }))
+    }
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+    await redis.set(
+    `reset:${hashedToken}`,
+    findmail._id.toString(),
+    {
+        EX: 900 
+    })
+
+    const transport = nodemailer.createTransport({
+                service: 'gmail',
+            auth: {
+                user: process.env.MAIL,        
+                pass: process.env.MAIL_PASS   
+                }
+            })
+            const mailOpt = {
+            from: process.env.MAIL,
+            to: email,
+            subject: 'Hospital appointment booking(reset password)',
+            text: 
+                `${process.env.DOMAIN}/reset-password?token=${resetToken}`
+            };
+    
+            await transport.sendMail(mailOpt, (error, info) =>{
+                  if (error) {
+        console.log('Error occurred:', error);
+      } else {
+        console.log('Email sent successfully:', info.response);
+      }})
+    }catch(error){
+        logger.info({
+            status : "error at reset password email service"
+        })
+
+        return res.status(200).json(formatter({
+            code : 400,
+            message: "error resetting password",
+            data : null
+        }))
+    }
+}
+
+const passwordReset = async (req, res)=> {
+    const {token, newPassword} = req.body;
+    const hashedToken =  crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+
+    const checkToken = await redis.get(`reset:${hashedToken}`);
+    if(!checkToken){
+        logger.info({
+            status : "token expired or empty",
+        })
+
+        return res.status(200).json(formatter({
+            code : 401,
+            message : "token expired",
+            data : null
+        }))
+    }
+
+    const client = await User.findById(checkToken);
+
+    if(!client){
+        return res.status(200).json(formatter({
+            code : 401,
+            message : "User not found",
+            data : null
+        }))
+    }
+    try{
+        const updatedPassword = await bcrypt.hash(newPassword, 10);
+        client.password = updatedPassword;
+
+        await client.save();
+
+        logger.info({
+            status : "resetting password"
+        })
+
+        return res.status(200).json(formatter({
+            code : 200,
+            message : "password changed successfully",
+            data : null
+        }))
+    }catch(error){
+        logger.info({
+            status : "error at resetting password"
+        })
+        return res.status(200).json(formatter({
+            code : 401,
+            message : "error at resetting password",
+            data : error
+        }))
+    }
+    
+
+}
+
+module.exports = {register, Login, allUser, passwordResetToken, passwordReset};
