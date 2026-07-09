@@ -9,6 +9,6 @@ router.post('/add/doctor',adminAuth, authMiddleware, addDoctor);
 router.patch('/update/doctor/:id', adminAuth,authMiddleware, updateDoctor);
 router.delete('/delete/doctor/:id',adminAuth,authMiddleware, deleteDoctor);
 router.get('/getone/doctor/:id', adminAuth,authMiddleware,readOneDoctor);
-router.get('/doctor-by-dep-ID', adminAuth, doctorByDepartmentID)
+router.post('/doctor-by-dep-ID', adminAuth, doctorByDepartmentID)
 
 module.exports = router;
