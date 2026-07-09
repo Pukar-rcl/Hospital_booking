@@ -13,7 +13,7 @@ const bookingRoutes = require('./routes/bookingRoutes');
 
 app.use(cors({
   origin: ['http://192.168.1.72:5500', 'http://127.0.0.1:5500', 
-    'http://localhost:5500', 'http://192.168.1.84:5174', 'http://localhost:5174'],
+    'http://localhost:5500', 'http://192.168.1.84:5174', 'http://localhost:5174', 'http://100.67.216.41:4000','http://100.67.216.41'],
   credentials: true,
 //   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 //   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
