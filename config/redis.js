@@ -22,6 +22,7 @@ async function redisConnect(){
         await redis_client.connect();
     }
 }
+redis_client.connect()
 
 module.exports = {
     redisConnect,
