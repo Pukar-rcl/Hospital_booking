@@ -11,7 +11,7 @@ router.post('/appointment', bookAppointment);
 router.get('/doctor-booking',adminmiddle, getDoctorBookings);
 router.post('/cancel', cancelBooking);
 router.get('/user-booking', getUserBookings);
-router.get('/check-slot', checkSlotAvailability);
+router.post('/check-slot', checkSlotAvailability);
 router.get ('/allbookings', adminmiddle, bookingDetails);
 
 module.exports = router;
