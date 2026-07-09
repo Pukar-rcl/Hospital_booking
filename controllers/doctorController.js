@@ -272,12 +272,12 @@ const doctorByDepartmentID = async(req,res)=>{
         });
         if (doctors.length === 0) {
             logger.info({
-                status: "error: incorrect department",
+                status: "error: no doctors in department",
                 urn: urn
             });
             return res.status(200).json(responseFormatter({
                 code: 401,
-                message: "INCORRECT DEPARTMENT",
+                message: "No Doctors in this department",
                 data: null
             }));
         }

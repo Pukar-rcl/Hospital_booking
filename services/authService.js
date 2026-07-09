@@ -2,9 +2,7 @@ const bcrypt = require('bcrypt');
 const jwttoken = require('jsonwebtoken');
 const User = require('../models/User');
 const formatter = require('../utils/responseFormat');
-const redis = require('redis');
-const redisClient = redis.createClient();
-redisClient.connect().catch(err => console.error("Redis Error", err));
+const redis = require('../config/redis');
 const logger = require('../config/logger');
 const crypto = require('crypto');
 

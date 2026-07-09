@@ -8,7 +8,7 @@ router.get('/getall/doctor', authMiddleware,readAllDoctors);
 router.post('/add/doctor',adminAuth, authMiddleware, addDoctor);
 router.patch('/update/doctor/:id', adminAuth,authMiddleware, updateDoctor);
 router.delete('/delete/doctor/:id',adminAuth,authMiddleware, deleteDoctor);
-router.get('/getone/doctor/:id', adminAuth,authMiddleware,readOneDoctor);
-router.post('/doctor-by-dep-ID', adminAuth, doctorByDepartmentID)
+router.get('/getone/doctor/:id', authMiddleware,readOneDoctor);
+router.post('/doctor-by-dep-ID', authMiddleware, doctorByDepartmentID)
 
 module.exports = router;
