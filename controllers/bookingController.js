@@ -5,7 +5,7 @@ const responseFormat = require('../utils/responseFormat');
 const logger = require('../config/logger'); 
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
-const redis = require('../config/redis');
+const {redis_client} = require('../config/redis');
 
 const timeToMinutes = (timeStr) => {
     if (!timeStr) return 0;
@@ -585,7 +585,7 @@ const bookingDetails = async (req, res)=>{
 const redisLock = async (doctorID,bookingDate,bookingStartTime,userID) => {
     const key = `lock:${doctorID}:${bookingDate}:${bookingStartTime}`;
 
-    const result = await redis.set(
+    const result = await redis_client.set(
         key,
         userID,
         {
