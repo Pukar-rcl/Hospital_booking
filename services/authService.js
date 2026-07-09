@@ -2,7 +2,7 @@ const bcrypt = require('bcrypt');
 const jwttoken = require('jsonwebtoken');
 const User = require('../models/User');
 const formatter = require('../utils/responseFormat');
-const redisClient = require('../config/redis');
+const { redis_client } = require("../config/redis");
 const logger = require('../config/logger');
 const crypto = require('crypto');
 
@@ -77,6 +77,7 @@ const register = async(req,res)=>{
 }
 
 const Login = async(req, res)=>{
+    // await redisClient.connect()
     try{
         console.log(req.body)
         if(!req.headers['urn']){
@@ -119,7 +120,7 @@ const Login = async(req, res)=>{
     {expiresIn:process.env.JWT_EXPIRY}
     )
 
-    await redisClient.set(`token_${user._id}`, token);
+    await redis_client.set(`token_${user._id}`, token);
 
     return res.status(200).json(formatter({
             code : 201,

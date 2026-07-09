@@ -17,14 +17,8 @@ redis_client.on("error", (err)=>{
     console.log("error occured on redis",err)
 })
 
-async function redisConnect(){
-    if(!redis_client.isOpen){
-        await redis_client.connect();
-    }
-}
 redis_client.connect()
 
 module.exports = {
-    redisConnect,
     redis_client
 }
