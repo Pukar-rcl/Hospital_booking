@@ -168,7 +168,7 @@ const passwordResetToken = async(req, res)=>{
     .update(resetToken)
     .digest("hex");
 
-    await redis.set(
+    await redis_client.set(
     `reset:${hashedToken}`,
     findmail._id.toString(),
     {

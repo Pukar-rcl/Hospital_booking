@@ -519,7 +519,7 @@ const checkSlotAvailability = async (req, res) => {
         if (conflictingBooking) {
 
         const key = `lock:${doctorID}:${bookingDate}:${bookingStartTime}`;
-        await redis.del(key);
+        await redis_client.del(key);
 
         return res.status(200).json(responseFormat({
             code: 401,
@@ -599,7 +599,7 @@ const redisLock = async (doctorID,bookingDate,bookingStartTime,userID) => {
 const releaseLock = async (doctorID, bookingDate, bookingStartTime) => {
     const key = `lock:${doctorID}:${bookingDate}:${bookingStartTime}`;
 
-    await redis.del(key);
+    await redis_client.del(key);
 };
 
 module.exports = {
