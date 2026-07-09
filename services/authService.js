@@ -217,7 +217,7 @@ const passwordReset = async (req, res)=> {
     .digest("hex");
 
 
-    const checkToken = await redis.get(`reset:${hashedToken}`);
+    const checkToken = await redis_client.get(`reset:${hashedToken}`);
     if(!checkToken){
         logger.info({
             status : "token expired or empty",
@@ -245,7 +245,7 @@ const passwordReset = async (req, res)=> {
 
         await client.save();
 
-        await redis.del(`reset:${hashedToken}`)
+        await redis_client.del(`reset:${hashedToken}`)
 
         logger.info({
             status : "resetting password"
