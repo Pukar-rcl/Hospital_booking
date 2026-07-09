@@ -5,6 +5,7 @@ const responseFormat = require('../utils/responseFormat');
 const logger = require('../config/logger'); 
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const redis = require('../config/redis');
 
 const timeToMinutes = (timeStr) => {
     if (!timeStr) return 0;
@@ -118,6 +119,8 @@ const getAvailableSlots = async (req, res) => {
         while (currentTime + averageTime <= endTime) {
             const slotStart = minutesToTime(currentTime);
             const slotEnd = minutesToTime(currentTime + averageTime);
+            const key = `lock:${doctorID}:${bookingDate}:${slotStart}`;
+            const locked = await redis.exists(key);
             const isBooked = existingBookings.some(booking => {
                 const bookingStart = new Date(booking.bookingStart);
                 const bookingEnd = new Date(booking.bookingEnd);
@@ -127,7 +130,7 @@ const getAvailableSlots = async (req, res) => {
                        (currentTime + averageTime > bookingStartMinutes && 
                         currentTime + averageTime <= bookingEndMinutes);
             });
-            if (!isBooked) {
+            if (!isBooked && !locked) {
                 availableSlots.push({
                     startTime: slotStart,
                     endTime: slotEnd
@@ -193,6 +196,20 @@ const bookAppointment = async (req, res) => {
                 data: null
             }));
         }
+        const locked = await redisLock(
+            doctorID,
+            bookingDate,
+            bookingStartTime,
+            userID
+        );
+
+        if (!locked) {
+            return res.status(200).json(responseFormat({
+                code: 409,
+                message: "This slot is temporarily reserved.",
+                data: null
+            }));
+}
         const bookingTimeMinutes = timeToMinutes(bookingStartTime);
         const dutyStart = timeToMinutes(doctor.dutytime.start);
         const dutyEnd = timeToMinutes(doctor.dutytime.end);
@@ -314,7 +331,13 @@ const bookAppointment = async (req, res) => {
             message: "Internal server error",
             data: null
         }));
-    }
+    }finally {
+    await releaseLock(
+        doctorID,
+        bookingDate,
+        bookingStartTime
+    );
+}
 };
 const getDoctorBookings = async (req, res) => {
     const urn = req.headers['urn'];
@@ -428,6 +451,26 @@ const getUserBookings = async (req, res) => {
 const checkSlotAvailability = async (req, res) => {
     const urn = req.headers['urn'];
     const { doctorID, bookingDate, bookingStartTime } = req.body;
+    const {userID} = req.user;
+    const locked = await redisLock(
+    doctorID,
+    bookingDate,
+    bookingStartTime,
+    userID   
+    );
+    if(!locked){
+
+        logger.info({
+                status : "redis key found"
+            })
+        return res.status(200).json(responseFormat({
+            code : 401,
+            message : "Slot already booked",
+            data : null
+        })
+        )
+        
+    }
     try {
         const doctor = await Doctor.findOne({ id: doctorID });
         if (!doctor) {
@@ -473,6 +516,19 @@ const checkSlotAvailability = async (req, res) => {
                 }
             ]
         });
+        if (conflictingBooking) {
+
+        const key = `lock:${doctorID}:${bookingDate}:${bookingStartTime}`;
+        await redis.del(key);
+
+        return res.status(200).json(responseFormat({
+            code: 401,
+            message: "Time slot not available",
+            data: {
+                available: false
+            }
+        }));
+}
         const available = !conflictingBooking;
 
         return res.status(200).json(responseFormat({
@@ -525,6 +581,26 @@ const bookingDetails = async (req, res)=>{
         data : result
     }))
 }
+
+const redisLock = async (doctorID,bookingDate,bookingStartTime,userID) => {
+    const key = `lock:${doctorID}:${bookingDate}:${bookingStartTime}`;
+
+    const result = await redis.set(
+        key,
+        userID,
+        {
+            NX: true,// NX sets only if it doesnot already exist
+            EX: 300 // 5 X6 0
+        }
+    );
+    return result === "OK";
+};
+
+const releaseLock = async (doctorID, bookingDate, bookingStartTime) => {
+    const key = `lock:${doctorID}:${bookingDate}:${bookingStartTime}`;
+
+    await redis.del(key);
+};
 
 module.exports = {
     bookingDetails,
