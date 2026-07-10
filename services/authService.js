@@ -19,7 +19,7 @@ const register = async(req,res)=>{
             action: "create user",
             email: req.body.email,
         })
-
+        console.log("req.body:", req.body);
         const {name, email, password, phone} = req.body;
         const urn = req.headers['urn'];
         let{condition} = req.body;

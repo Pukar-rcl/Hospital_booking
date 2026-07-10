@@ -29,11 +29,11 @@ const registervalidate = async(req,res,next) =>{
             })
         )
      }
-     if(phone.length<10 || !phone || !email.includes('9')){
+     if(!phone){
         return res.status(200).json(
             responseFormat({
                 code : 401,
-                message : "invalid email"
+                message : "phone no no given"
             })
         )
      }

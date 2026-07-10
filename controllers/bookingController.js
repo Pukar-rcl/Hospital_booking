@@ -450,102 +450,75 @@ const getUserBookings = async (req, res) => {
 
 const checkSlotAvailability = async (req, res) => {
     const urn = req.headers['urn'];
-    const { doctorID, bookingDate, bookingStartTime } = req.body;
-    const {userID} = req.user;
-    const locked = await redisLock(
-    doctorID,
-    bookingDate,
-    bookingStartTime,
-    userID   
-    );
-    if(!locked){
+    const { doctorID, bookingDate, bookingStartTime, userID } = req.body;
 
-        logger.info({
-                status : "redis key found"
-            })
-        return res.status(200).json(responseFormat({
-            code : 401,
-            message : "Slot already booked",
-            data : null
-        })
-        )
-        
-    }
     try {
+        const locked = await redisLock(
+            doctorID,
+            bookingDate,
+            bookingStartTime,
+            userID
+        );
+
+        if (!locked) {
+            return res.status(200).json(responseFormat({
+                code: 401,
+                message: "Slot already booked",
+                data: null
+            }));
+        }
+
         const doctor = await Doctor.findOne({ id: doctorID });
+
         if (!doctor) {
+            await releaseLock(doctorID, bookingDate, bookingStartTime);
+
             return res.status(200).json(responseFormat({
                 code: 401,
                 message: "Doctor not found",
                 data: null
             }));
         }
+
         const averageTime = doctor.averagetime || 30;
         const bookingEndTime = addMinutesToTime(bookingStartTime, averageTime);
-        const bookingTimeMinutes = timeToMinutes(bookingStartTime);
-        const dutyStart = timeToMinutes(doctor.dutytime.start);
-        const dutyEnd = timeToMinutes(doctor.dutytime.end);
 
-        if (bookingTimeMinutes < dutyStart || 
-            bookingTimeMinutes + averageTime > dutyEnd) {
-            return res.status(200).json(responseFormat({
-                code: 401,
-                message: "Time is outside doctor's duty hours",
-                data: { available: false }
-            }));
-        }
         const { start, end } = getDateRange(bookingDate);
+
         const conflictingBooking = await Booking.findOne({
             Did: doctorID,
             bookingStart: {
                 $gte: start,
                 $lte: end
-            },
-            $or: [
-                {
-                    bookingStart: {
-                        $lte: new Date(`${bookingDate}T${bookingStartTime}:00`),
-                        $gte: new Date(`${bookingDate}T${bookingStartTime}:00`)
-                    }
-                },
-                {
-                    bookingEnd: {
-                        $gte: new Date(`${bookingDate}T${bookingStartTime}:00`),
-                        $lte: new Date(`${bookingDate}T${bookingEndTime}:00`)
-                    }
-                }
-            ]
-        });
-        if (conflictingBooking) {
-
-        const key = `lock:${doctorID}:${bookingDate}:${bookingStartTime}`;
-        await redis_client.del(key);
-
-        return res.status(200).json(responseFormat({
-            code: 401,
-            message: "Time slot not available",
-            data: {
-                available: false
             }
-        }));
-}
-        const available = !conflictingBooking;
+        });
+
+        if (conflictingBooking) {
+            await releaseLock(doctorID, bookingDate, bookingStartTime);
+
+            return res.status(200).json(responseFormat({
+                code: 401,
+                message: "Time slot not available",
+                data: {
+                    available: false
+                }
+            }));
+        }
 
         return res.status(200).json(responseFormat({
             code: 200,
-            message: available ? "Time slot available" : "Time slot not available",
-            data: { available }
+            message: "Time slot available",
+            data: {
+                available: true
+            }
         }));
+
     } catch (error) {
-        logger.error({
-            status: "error",
-            message: error.message,
-            urn: urn
-        });
+        logger.error(error);
+
         return res.status(500).json(responseFormat({
             code: 500,
-            message: "Internal server error",
-            data: null
+            message: error.message
         }));
     }
 };
@@ -582,17 +555,33 @@ const bookingDetails = async (req, res)=>{
     }))
 }
 
-const redisLock = async (doctorID,bookingDate,bookingStartTime,userID) => {
+const redisLock = async (doctorID, bookingDate, bookingStartTime, userID) => {
+    if (
+        doctorID == null ||
+        bookingDate == null ||
+        bookingStartTime == null ||
+        userID == null
+    ) {
+        throw new Error(
+            `redisLock() missing parameter:
+doctorID=${doctorID}
+bookingDate=${bookingDate}
+bookingStartTime=${bookingStartTime}
+userID=${userID}`
+        );
+    }
+
     const key = `lock:${doctorID}:${bookingDate}:${bookingStartTime}`;
 
     const result = await redis_client.set(
         key,
-        userID,
+        String(userID),
         {
-            NX: true,// NX sets only if it doesnot already exist
-            EX: 300 // 5 X6 0
+            NX: true,
+            EX: 300
         }
     );
+
     return result === "OK";
 };
 
