@@ -120,7 +120,7 @@ const getAvailableSlots = async (req, res) => {
             const slotStart = minutesToTime(currentTime);
             const slotEnd = minutesToTime(currentTime + averageTime);
             const key = `lock:${doctorID}:${bookingDate}:${slotStart}`;
-            const locked = await redis.exists(key);
+            const locked = await redis_client.exists(key);
             const isBooked = existingBookings.some(booking => {
                 const bookingStart = new Date(booking.bookingStart);
                 const bookingEnd = new Date(booking.bookingEnd);
