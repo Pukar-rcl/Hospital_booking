@@ -70,7 +70,7 @@ console.log(token);
             }))
         }
         req.user = {
-            id : decoded.id,
+            id : decoded.userId,
             role : decoded.role
         }
 
