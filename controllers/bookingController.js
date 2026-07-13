@@ -430,69 +430,53 @@ const getUserBookings = async (req, res) => {
 
 const checkSlotAvailability = async (req, res) => {
     const urn = req.headers['urn'];
-    const { doctorID, bookingDate, bookingStartTime} = req.body;
-    const userID = req.user.id;
+    const { doctorID, bookingDate} = req.body;
     try {
-        const locked = await redisLock(
-            doctorID,
-            bookingDate,
-            bookingStartTime,
-            userID
-        );
-
-        if (!locked) {
-            return res.status(200).json(responseFormat({
-                code: 401,
-                message: "Slot already booked",
-                data: null
-            }));
-        }
-
         const doctor = await Doctor.findOne({ id: doctorID });
 
-        if (!doctor) {
-            await releaseLock(doctorID, bookingDate, bookingStartTime);
+    const dutyStart = doctor.dutytime.start;
+    const dutyEnd = doctor.dutytime.end;
+    const averageTime = doctor.averagetime;
 
-            return res.status(200).json(responseFormat({
-                code: 401,
-                message: "Doctor not found",
-                data: null
-            }));
+    const slots = [];
+
+    let current = timeToMinutes(dutyStart);
+    const ending = timeToMinutes(dutyEnd);
+
+    while (current + averageTime <= ending) {
+        slots.push(minutesToTime(current));
+        current += averageTime;
+    }
+
+    const { start, end } = getDateRange(bookingDate);
+
+    const bookings = await Booking.find({
+        Did: doctorID,
+        bookingStart: {
+            $gte: start,
+            $lte: end
         }
+    });
 
-        const averageTime = doctor.averagetime || 30;
-        const bookingEndTime = addMinutesToTime(bookingStartTime, averageTime);
+    const bookedSlots = bookings.map(booking =>
+        booking.bookingStart.toLocaleTimeString("en-GB", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false
+        })
+    );
 
-        const { start, end } = getDateRange(bookingDate);
+    const availableSlots = slots.filter(
+        slot => !bookedSlots.includes(slot)
+    );
 
-        const conflictingBooking = await Booking.findOne({
-            Did: doctorID,
-            bookingStart: {
-                $gte: start,
-                $lte: end
-            }
-        });
-
-        if (conflictingBooking) {
-            await releaseLock(doctorID, bookingDate, bookingStartTime);
-
-            return res.status(200).json(responseFormat({
-                code: 401,
-                message: "Time slot not available",
-                data: {
-                    available: false
-                }
-            }));
-        }
-
-        return res.status(200).json(responseFormat({
+    return res.status(200).json(
+        responseFormat({
             code: 200,
-            message: "Time slot available",
-            data: {
-                available: true
-            }
-        }));
-
+            message: "Available slots",
+            data: availableSlots
+        })
+    );
     } catch (error) {
         logger.error(error);
 
