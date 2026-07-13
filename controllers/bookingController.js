@@ -40,13 +40,9 @@ const getDoctorDept = async (req, res) => {
         const dept = await Doctor.find({ department : departmentName });
         if (!dept) {
             logger.info({
-                status: "error: incorrect department",
-                urn: urn
-            });
+                status: "error: incorrect department",urn: urn});
             return res.status(200).json(responseFormat({
-                code: 401,
-                message: "INCORRECT DEPARTMENT",
-                data: null
+                code: 401,message: "INCORRECT DEPARTMENT",data: null
             }));
         }
         const depID = dept.id;
@@ -56,10 +52,7 @@ const getDoctorDept = async (req, res) => {
         });
 
         if (!doctorsOfDepartment || doctorsOfDepartment.length === 0) {
-            logger.info({
-                status: "no doctor in department",
-                urn: urn
-            });
+            logger.info({status: "no doctor in department",urn: urn});
             return res.status(200).json(responseFormat({
                 code: 401,
                 message: "No doctor exists in department",
@@ -67,24 +60,11 @@ const getDoctorDept = async (req, res) => {
             }));
         }
         return res.status(200).json(responseFormat({
-            code: 200,
-            message: "Available doctors from department",
-            data: {
-                departmentName,
-                doctors: doctorsOfDepartment
-            }
+            code: 200,message: "Available doctors from department",data: {departmentName,doctors: doctorsOfDepartment}
         }));
     } catch (error) {
-        logger.error({
-            status: "error",
-            message: error.message,
-            urn: urn
-        });
-        return res.status(500).json(responseFormat({
-            code: 500,
-            message: "Internal server error",
-            data: null
-        }));
+        logger.error({status: "error",message: error.message,urn: urn});
+        return res.status(500).json(responseFormat({code: 500,message: "Internal server error",data: null}));
     }
 };
 
@@ -523,7 +503,6 @@ const checkSlotAvailability = async (req, res) => {
     }
 };
 
-
 const bookingDetails = async (req, res)=>{
     const urn  = req.headers['urn'];
     const bookings = await Booking.find();
@@ -570,7 +549,6 @@ bookingStartTime=${bookingStartTime}
 userID=${userID}`
         );
     }
-
     const key = `lock:${doctorID}:${bookingDate}:${bookingStartTime}`;
 
     const result = await redis_client.set(
@@ -587,7 +565,6 @@ userID=${userID}`
 
 const releaseLock = async (doctorID, bookingDate, bookingStartTime) => {
     const key = `lock:${doctorID}:${bookingDate}:${bookingStartTime}`;
-
     await redis_client.del(key);
 };
 

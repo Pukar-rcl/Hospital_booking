@@ -125,7 +125,7 @@ const Login = async(req, res)=>{
     return res.status(200).json(formatter({
             code : 201,
             message: "Login Success",
-            data: token
+            data: {token, userID : user.id}
         }))
     }catch(error){
         console.log(error)
