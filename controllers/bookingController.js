@@ -430,8 +430,8 @@ const getUserBookings = async (req, res) => {
 
 const checkSlotAvailability = async (req, res) => {
     const urn = req.headers['urn'];
-    const { doctorID, bookingDate, bookingStartTime, userID } = req.body;
-
+    const { doctorID, bookingDate, bookingStartTime} = req.body;
+    const userID = req.user.id;
     try {
         const locked = await redisLock(
             doctorID,
