@@ -9,7 +9,7 @@ const router = express.Router();
 router.post('/getdoctor', getDoctorDept);
 router.post('/slots', getAvailableSlots);
 router.post('/appointment', bookAppointment);
-router.post('/doctor-booking',adminmiddle, getDoctorBookings);
+router.post('/doctor-booking', getDoctorBookings);
 router.post('/cancel', cancelBooking);
 router.post('/user-booking', getUserBookings);
 router.post('/check-slot',userMiddle, checkSlotAvailability);
