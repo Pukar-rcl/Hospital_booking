@@ -3,7 +3,6 @@ const express = require('express');
 const app = express();
 const authRoutes = require('./routes/authRoutes');
 const ConnectMongo = require('./config/database')
-const Logger = require('./middelware/loggerMiddleware');
 const cors = require('cors')
 const doctorroutes = require('./routes/doctorRoutes')
 const adminRoutes = require('./routes/adminRoutes');

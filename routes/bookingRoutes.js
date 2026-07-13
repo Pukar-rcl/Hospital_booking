@@ -1,6 +1,6 @@
 const {
     getDoctorDept,getAvailableSlots,bookAppointment,getDoctorBookings,
-    cancelBooking,getUserBookings,checkSlotAvailability, bookingDetails} = require('../controllers/bookingController')
+    cancelBooking,getUserBookings,checkSlotAvailability, bookingDetails, reserveSlot} = require('../controllers/bookingController')
 const adminmiddle = require('../middelware/adminAuthorization')
 const userMiddle = require('../middelware/auth');
 const  express = require ('express');
@@ -14,5 +14,6 @@ router.post('/cancel', cancelBooking);
 router.post('/user-booking', getUserBookings);
 router.post('/check-slot',userMiddle, checkSlotAvailability);
 router.get ('/allbookings', adminmiddle, bookingDetails);
+router.post('/reserve-slot', userMiddle, reserveSlot);
 
 module.exports = router;

@@ -469,7 +469,15 @@ const checkSlotAvailability = async (req, res) => {
     const availableSlots = slots.filter(
         slot => !bookedSlots.includes(slot)
     );
+    for (const slot of slots) {
+        const key = `lock:${doctorID}:${bookingDate}:${slot}`;
 
+        const locked = await redis_client.exists(key);
+
+        if (!locked && !bookedSlots.includes(slot)) {
+            availableSlots.push(slot);
+        }
+    }
     return res.status(200).json(
         responseFormat({
             code: 200,
@@ -552,6 +560,32 @@ const releaseLock = async (doctorID, bookingDate, bookingStartTime) => {
     await redis_client.del(key);
 };
 
+const reserveSlot = async (req, res) => {
+    const { doctorID, bookingDate, bookingStartTime } = req.body;
+    const userID = req.user.id;
+
+    const key = `lock:${doctorID}:${bookingDate}:${bookingStartTime}`;
+
+    const result = await redis_client.set(
+        key,
+        userID,
+        {
+            NX: true,
+            EX: 120
+        }
+    );
+
+    if (result !== "OK") {
+        return res.status(409).json({
+            message: "Slot already reserved"
+        });
+    }
+
+    return res.json({
+        message: "Slot reserved for 2 minutes"
+    });
+};
+
 module.exports = {
     bookingDetails,
     getDoctorDept,
@@ -560,5 +594,6 @@ module.exports = {
     getDoctorBookings,
     cancelBooking,
     getUserBookings,
-    checkSlotAvailability
+    checkSlotAvailability,
+    reserveSlot
 };
