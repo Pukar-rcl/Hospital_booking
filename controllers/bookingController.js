@@ -6,6 +6,7 @@ const logger = require('../config/logger');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const {redis_client} = require('../config/redis');
+const { truncate } = require('fs/promises');
 
 const timeToMinutes = (timeStr) => {
     if (!timeStr) return 0;
@@ -169,7 +170,8 @@ const bookAppointment = async (req, res) => {
                 data: null
             }));
         }
-        if (!doctor.isActive) {
+        console.log("Request body:", req.body);
+        if (doctor.isActive !== true) {
             return res.status(200).json(responseFormat({
                 code: 401,
                 message: "Doctor is not available",
@@ -312,11 +314,15 @@ const bookAppointment = async (req, res) => {
             data: null
         }));
     }finally {
-    await releaseLock(
+        try{
+            await releaseLock(
         doctorID,
         bookingDate,
         bookingStartTime
     );
+        }catch(error){
+            console.log("realese lock failed");
+        }
 }
 };
 const getDoctorBookings = async (req, res) => {
