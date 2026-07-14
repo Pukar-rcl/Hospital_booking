@@ -6,7 +6,6 @@ const logger = require('../config/logger');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const {redis_client} = require('../config/redis');
-const { truncate } = require('fs/promises');
 
 const timeToMinutes = (timeStr) => {
     if (!timeStr) return 0;
@@ -152,7 +151,8 @@ const minutesToTime = (minutes) => {
 
 const bookAppointment = async (req, res) => {
     const urn = req.headers['urn'];
-    const { userID, doctorID, bookingDate, bookingStartTime } = req.body;
+    const {doctorID, bookingDate, bookingStartTime } = req.body;
+    const userID = req.user.id;
     try {
         const user = await User.findOne({ id: userID });
         if (!user) {
