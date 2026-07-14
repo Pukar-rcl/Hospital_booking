@@ -429,69 +429,84 @@ const getUserBookings = async (req, res) => {
 };
 
 const checkSlotAvailability = async (req, res) => {
-    const urn = req.headers['urn'];
-    const { doctorID, bookingDate} = req.body;
+    const { doctorID, bookingDate } = req.body;
     try {
         const doctor = await Doctor.findOne({ id: doctorID });
-
-    const dutyStart = doctor.dutytime.start;
-    const dutyEnd = doctor.dutytime.end;
-    const averageTime = doctor.averagetime;
-
-    const slots = [];
-
-    let current = timeToMinutes(dutyStart);
-    const ending = timeToMinutes(dutyEnd);
-
-    while (current + averageTime <= ending) {
-        slots.push(minutesToTime(current));
-        current += averageTime;
-    }
-
-    const { start, end } = getDateRange(bookingDate);
-
-    const bookings = await Booking.find({
-        Did: doctorID,
-        bookingStart: {
-            $gte: start,
-            $lte: end
+        if (!doctor) {
+            return res.status(200).json(
+                responseFormat({
+                    code: 404,
+                    message: "Doctor not found"
+                })
+            );
         }
-    });
 
-    const bookedSlots = bookings.map(booking =>
-        booking.bookingStart.toLocaleTimeString("en-GB", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false
-        })
-    );
+        const dutyStart = doctor.dutytime.start;
+        const dutyEnd = doctor.dutytime.end;
+        const averageTime = doctor.averagetime;
 
-    const availableSlots = slots.filter(
-        slot => !bookedSlots.includes(slot)
-    );
-    for (const slot of slots) {
-        const key = `lock:${doctorID}:${bookingDate}:${slot}`;
+        const slots = [];
+        let current = timeToMinutes(dutyStart);
+        const ending = timeToMinutes(dutyEnd);
 
-        const locked = await redis_client.exists(key);
-
-        if (!locked && !bookedSlots.includes(slot)) {
-            availableSlots.push(slot);
+        while (current + averageTime <= ending) {
+            slots.push(minutesToTime(current));
+            current += averageTime;
         }
-    }
-    return res.status(200).json(
-        responseFormat({
-            code: 200,
-            message: "Available slots",
-            data: availableSlots
-        })
-    );
+
+        const { start, end } = getDateRange(bookingDate);
+
+        const bookings = await Booking.find({
+            Did: doctorID,
+            bookingStart: {
+                $gte: start,
+                $lte: end
+            }
+        });
+
+        const bookedSlots = new Set(
+            bookings.map(booking =>
+                booking.bookingStart.toLocaleTimeString("en-GB", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false
+                })
+            )
+        );
+
+        const result = [];
+
+        for (const slot of slots) {
+            const key = `lock:${doctorID}:${bookingDate}:${slot}`;
+            const locked = await redis_client.exists(key);
+            let status = "available";
+
+            if (bookedSlots.has(slot)) {
+                status = "booked";
+            } else if (locked) {
+                status = "blocked";
+            }
+            result.push({
+                time: slot,
+                status
+            });
+        }
+
+        return res.status(200).json(
+            responseFormat({
+                code: 200,
+                message: "Slots fetched successfully",
+                data: result
+            })
+        );
+
     } catch (error) {
-        logger.error(error);
-
-        return res.status(500).json(responseFormat({
-            code: 500,
-            message: error.message
-        }));
+        return res.status(500).json(
+            responseFormat({
+                code: 500,
+                message: error.message
+            })
+        );
     }
 };
 
