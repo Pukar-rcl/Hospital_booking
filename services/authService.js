@@ -230,7 +230,7 @@ const passwordReset = async (req, res)=> {
         }))
     }
 
-    const client = await User.findById(checkToken);
+    const client = await User.findOne({id :checkToken});
 
     if(!client){
         return res.status(200).json(formatter({
@@ -250,7 +250,6 @@ const passwordReset = async (req, res)=> {
         logger.info({
             status : "resetting password"
         })
-
         return res.status(200).json(formatter({
             code : 200,
             message : "password changed successfully",
@@ -266,8 +265,6 @@ const passwordReset = async (req, res)=> {
             data : error
         }))
     }
-    
-
 }
 
 module.exports = {register, Login, allUser, passwordResetToken, passwordReset};

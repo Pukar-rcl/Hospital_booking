@@ -4,8 +4,8 @@ const Booking = require('../models/booking');
 const responseFormat = require('../utils/responseFormat');
 const logger = require('../config/logger'); 
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
 const {redis_client} = require('../config/redis');
+const sendMail = require('../utils/mailSender')
 
 const timeToMinutes = (timeStr) => {
     if (!timeStr) return 0;
@@ -263,33 +263,8 @@ const bookAppointment = async (req, res) => {
             urn: urn,
             bookingId: bookingId
         });
-
-        const transport = nodemailer.createTransport({
-            service: 'gmail',
-        auth: {
-            user: process.env.MAIL,        
-            pass: process.env.MAIL_PASS   
-            }
-        })
-        const mailOpt = {
-        from: process.env.MAIL,
-        to: user.email,
-        subject: 'Hospital appointment booking',
-        text: `
-        ID : ${bookingId},
-        Doctor name: ${doctor.name},
-               Date: ${bookingDate},
-                Time : ${bookingStartTime},
-                till :${bookingEndTime}`
-        };
-
-        transport.sendMail(mailOpt, (error, info) =>{
-              if (error) {
-    console.log('Error occurred:', error);
-  } else {
-    console.log('Email sent successfully:', info.response);
-  }
-        })
+        sendMail(user.email, "Hospital appointment receipt", `Doctor name : ${doctor.name},
+            Doctor id: ${booking.Did}, department ${department.name}`);
       
         return res.status(200).json(responseFormat({
             code: 200,
@@ -356,9 +331,10 @@ const getDoctorBookings = async (req, res) => {
     }
 };
 
-const cancelBooking = async (req, res) => {
+const cancelBooking = async (req, res) => { 
     const urn = req.headers['urn'];
-    const { bookingId, userID } = req.body;
+    const {bookingId} = req.body;
+    const userID = req.user.id;
     try {
         const booking = await Booking.findOne({ 
             bookingId: bookingId,
@@ -410,15 +386,27 @@ const cancelBooking = async (req, res) => {
 
 const getUserBookings = async (req, res) => {
     const urn = req.headers['urn'];
-    const { userID } = req.body;
+    const userID  = req.user.id;
     try {
-        const bookings = await Booking.find({ Pid: userID })
-            .populate('Did', 'name department')
-            .sort({ bookingStart: 1 });
+        const bookings = await Booking.find({ Pid: userID });
+
+        const result = await Promise.all(
+            bookings.map(async booking => {
+                const doctor = await Doctor.findOne(
+                    { id: booking.Did },
+                    "name department"
+                );
+
+                return {
+                    ...booking.toObject(),
+                    doctor
+                };
+            })
+        );
         return res.status(200).json(responseFormat({
             code: 200,
             message: "User's bookings",
-            data: bookings
+            data: result
         }));
     } catch (error) {
         logger.error({
@@ -584,6 +572,7 @@ const releaseLock = async (doctorID, bookingDate, bookingStartTime) => {
 const reserveSlot = async (req, res) => {
     const { doctorID, bookingDate, bookingStartTime } = req.body;
     const userID = req.user.id;
+    console.log(req.user.id);
 
     const key = `lock:${doctorID}:${bookingDate}:${bookingStartTime}`;
 
