@@ -14,6 +14,6 @@ router.post('/cancel', userMiddle,cancelBooking);
 router.get('/user-booking', userMiddle,getUserBookings);
 router.post('/check-slot',userMiddle, checkSlotAvailability);
 router.get ('/allbookings', adminmiddle, bookingDetails);
-router.post('/reserve-slot', userMiddle, reserveSlot);
+router.post('/reserve-slot', reserveSlot);
 
 module.exports = router;

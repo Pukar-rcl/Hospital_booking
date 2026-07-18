@@ -152,7 +152,9 @@ const minutesToTime = (minutes) => {
 const bookAppointment = async (req, res) => {
     const urn = req.headers['urn'];
     const {doctorID, bookingDate, bookingStartTime } = req.body;
-    const userID = req.user.id;
+    const userID = req.user.userId;
+    console.log("bookAppointment hit");
+    console.log(req.body);
     try {
         const user = await User.findOne({ id: userID });
         if (!user) {
@@ -178,19 +180,41 @@ const bookAppointment = async (req, res) => {
                 data: null
             }));
         }
-        const locked = await redisLock(
-            doctorID,
-            bookingDate,
-            bookingStartTime,
-            userID
-        );
+        const key = `lock:${doctorID}:${bookingDate}:${bookingStartTime}`;
 
-        if (!locked) {
-            return res.status(200).json(responseFormat({
+    const owner = await redis_client.get(key);
+
+    if (owner) {
+        if (owner !== String(userID)) {
+            return res.status(200).json(
+                responseFormat({
+                    code: 409,
+                    message: "This slot is reserved by another user.",
+                    data: null
+                })
+            );
+        }
+        await redis_client.expire(key, 300);
+
+} else {
+    const result = await redis_client.set(
+        key,
+        String(userID),
+        {
+            NX: true,
+            EX: 300
+        }
+    );
+
+    if (result !== "OK") {
+        return res.status(200).json(
+            responseFormat({
                 code: 409,
-                message: "This slot is temporarily reserved.",
+                message: "Unable to reserve slot.",
                 data: null
-            }));
+            })
+        );
+    }
 }
         const bookingTimeMinutes = timeToMinutes(bookingStartTime);
         const dutyStart = timeToMinutes(doctor.dutytime.start);
@@ -264,7 +288,7 @@ const bookAppointment = async (req, res) => {
             bookingId: bookingId
         });
         sendMail(user.email, "Hospital appointment receipt", `Doctor name : ${doctor.name},
-            Doctor id: ${booking.Did}, department ${department.name}`);
+            Doctor id: ${booking.Did}`);
       
         return res.status(200).json(responseFormat({
             code: 200,
@@ -334,7 +358,7 @@ const getDoctorBookings = async (req, res) => {
 const cancelBooking = async (req, res) => { 
     const urn = req.headers['urn'];
     const {bookingId} = req.body;
-    const userID = req.user.id;
+    const userID = req.user.userId;
     try {
         const booking = await Booking.findOne({ 
             bookingId: bookingId,
@@ -351,13 +375,21 @@ const cancelBooking = async (req, res) => {
         const now = new Date();
         const bookingTime = new Date(booking.bookingStart);
         const hoursDifference = (bookingTime - now) / (1000 * 60 * 60);
-        if (hoursDifference < 2) {
-            return res.status(200).json(responseFormat({
-                code: 401,
-                message: "Cannot cancel booking within 2 hours of appointment",
-                data: null
-            }));
-        }
+        if (bookingTime <= now) {
+    return res.status(200).json(responseFormat({
+        code: 401,
+        message: "Appointment has already started or finished.",
+        data: null
+    }));
+}
+
+if (hoursDifference < 2) {
+    return res.status(200).json(responseFormat({
+        code: 401,
+        message: "Cannot cancel booking within 2 hours of appointment.",
+        data: null
+    }));
+}
         await Booking.deleteOne({ bookingId: bookingId });
         logger.info({
             status: "success",
@@ -386,7 +418,7 @@ const cancelBooking = async (req, res) => {
 
 const getUserBookings = async (req, res) => {
     const urn = req.headers['urn'];
-    const userID  = req.user.id;
+    const userID  = req.user.userId;
     try {
         const bookings = await Booking.find({ Pid: userID });
 
@@ -545,7 +577,7 @@ const redisLock = async (doctorID, bookingDate, bookingStartTime, userID) => {
         throw new Error(
             `redisLock() missing parameter:
 doctorID=${doctorID}
-bookingDate=${bookingDate}
+bookingDate=${boOKokingDate}
 bookingStartTime=${bookingStartTime}
 userID=${userID}`
         );
@@ -560,8 +592,15 @@ userID=${userID}`
             EX: 300
         }
     );
+    console.log({
+    key,
+    userID,
+    result
+});
 
     return result === "OK";
+
+
 };
 
 const releaseLock = async (doctorID, bookingDate, bookingStartTime) => {
@@ -571,19 +610,18 @@ const releaseLock = async (doctorID, bookingDate, bookingStartTime) => {
 
 const reserveSlot = async (req, res) => {
     const { doctorID, bookingDate, bookingStartTime } = req.body;
-    const userID = req.user.id;
     console.log(req.user.id);
 
     const key = `lock:${doctorID}:${bookingDate}:${bookingStartTime}`;
 
     const result = await redis_client.set(
-        key,
-        userID,
-        {
-            NX: true,
-            EX: 120
-        }
-    );
+    key,
+    req.user.userId,
+    {
+        NX: true,
+        EX: 120
+    }
+);
 
     if (result !== "OK") {
         return res.status(409).json({

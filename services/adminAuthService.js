@@ -138,6 +138,10 @@ const adminAuthLogin= async(req,res)=>{
         action: "Login for admin",
         urn : urn
     })
+    req.user = {
+        id: existingAdmin.id,
+        role : existingAdmin.role 
+    }
 
     return res.status(200).json(formatResponce({
         code : 201,

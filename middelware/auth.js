@@ -54,7 +54,7 @@ console.log(token);
         let decoded;
         try{
             decoded = jwt.verify(token, process.env.JWT_SECRET);
-            console.log("deccc",decoded)
+            console.log("authmiddleware: ",decoded)
             logger.info({
                 action: "JWT verified",
             })
@@ -69,12 +69,9 @@ console.log(token);
                 data : error.message
             }))
         }
-        req.user = {
-            id : decoded.userId,
-            role : decoded.role
-        }
+        req.user = decoded;
 
-        // console.log(req.user)
+        console.log(req.user)
     }catch(error){
         logger.info({
                 action: "error at token authentication"

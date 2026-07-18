@@ -6,7 +6,9 @@ const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const Department = require('../models/department');
 
 
+
 const addDoctor = async(req,res)=>{
+    console.log("In add doctor:req.user");
     const {name, department, dutytime, averagetime} = req.body;
     const urn = req.headers['urn'];
 
@@ -84,13 +86,16 @@ const addDoctor = async(req,res)=>{
 
     const docID = crypto.randomInt(10001, 100000);
     try{
+
+        console.log(admuserID)
+        console.log(req.user.id)
         const adddoctor = new doctor({
         name : name,
         id : docID,
         department : department,
         departmentId : dep.id,
         dutytime : dutytime,
-        createdBy : admuserID,
+        createdBy : req.user.id,
         averagetime : averagetime
         })
         await adddoctor.save()
@@ -191,11 +196,7 @@ const deleteDoctor = async (req,res)=>{
     const {id} = req.params;
     const urn = req.headers['urn'];
 
-    const updatedDoctor = await doctor.findOneAndUpdate(
-        {id},
-        {$set: {isActive : false}},
-        {new: true}
-    );
+    await doctor.findOneAndDelete({id:id});
 
     logger.info({
         status : "doctor soft deletion",

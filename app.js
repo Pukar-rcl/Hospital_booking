@@ -30,7 +30,7 @@ app.use('/api', authRoutes);
 app.use('/api/admin',adminRoutes);
 app.use('/api/admin', authMiddleware, doctorroutes);
 app.use('/api/admin', authMiddleware,departmentRoutes);
-app.use('/api/booking', authMiddleware, bookingRoutes);
+app.use('/api/booking',authMiddleware, bookingRoutes);
 
 const PORT = process.env.PORT;
 
